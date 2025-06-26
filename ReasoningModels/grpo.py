@@ -39,3 +39,14 @@ def compute_grpo_loss(inputs, pi_theta, pi_anchor, reward_model, beta):
     loss = -torch.mean(total_reward)
 
     return loss
+def dpo_loss(pi_theta, pi_ref, prompt, chosen, rejected, beta):
+    log_probs_chosen = pi_theta.log_prob(prompt, chosen)
+    log_probs_rejected = pi_theta.log_prob(prompt, rejected)
+    
+    ref_log_probs_chosen = pi_ref.log_prob(prompt, chosen).detach()
+    ref_log_probs_rejected = pi_ref.log_prob(prompt, rejected).detach()
+    
+    # Compute log-ratio
+    logratios = (log_probs_chosen - log_probs_rejected) - beta * (ref_log_probs_chosen - ref_log_probs_rejected)
+    loss = -F.logsigmoid(logratios).mean()
+    return loss
